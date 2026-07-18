@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>IPSC Stagekalkylator</title>
+<style>
+  :root{
+    --cardboard:#C7A97A;
+    --cardboard-hi:#D9BE8E;
+    --cardboard-lo:#B29465;
+    --ink:#26231B;
+    --paper:#F2ECDD;
+    --penalty:#B23A2B;
+    --timer-bg:#15130E;
+    --timer-edge:#2A261C;
+    --amber:#FFB300;
+    --amber-dim:#E8DCC0;
+    --ok:#3E6B3A;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:
+      radial-gradient(1200px 600px at 50% -10%, rgba(255,255,255,.18), transparent 60%),
+      var(--cardboard);
+    color:var(--ink);
+    min-height:100dvh;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .app{max-width:480px;margin:0 auto;padding:0 14px calc(24px + env(safe-area-inset-bottom))}
+
+  /* ---------- Header ---------- */
+  header{
+    display:flex;align-items:center;justify-content:space-between;gap:8px;
+    padding:14px 2px 10px;
+  }
+  h1{
+    font-size:15px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;
+    white-space:nowrap;
+  }
+  h1 span{opacity:.55;font-weight:700}
+  @media (max-width:439px){ h1 span{display:none} }
+
+  .toggles{display:flex;gap:8px;align-items:center}
+  .pf-toggle{
+    display:flex;border:2px solid var(--ink);border-radius:6px;overflow:hidden;
+  }
+  .pf-toggle button{
+    font:inherit;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
+    padding:8px 12px;border:0;background:transparent;color:var(--ink);
+    cursor:pointer;touch-action:manipulation;
+  }
+  .pf-toggle button.active{background:var(--ink);color:var(--cardboard-hi)}
+  .lang-toggle button{font-size:11px;padding:8px 9px;letter-spacing:.06em}
+
+  /* ---------- Timer readout (sticky) ---------- */
+  .readout{
+    position:sticky;top:8px;z-index:10;
+    background:linear-gradient(180deg,#1B1811,var(--timer-bg));
+    border:1px solid var(--timer-edge);
+    border-radius:14px;
+    padding:14px 16px 12px;
+    box-shadow:0 6px 18px rgba(30,24,10,.35), inset 0 1px 0 rgba(255,255,255,.06);
+  }
+  .readout .hf-label{
+    font-size:10px;font-weight:800;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--amber-dim);opacity:.75;
+  }
+  .readout .hf{
+    font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    font-variant-numeric:tabular-nums;
+    font-size:clamp(44px,15vw,64px);
+    font-weight:700;line-height:1.05;
+    color:var(--amber);
+    text-shadow:0 0 14px rgba(255,179,0,.35);
+  }
+  .readout .subrow{
+    display:flex;justify-content:space-between;gap:8px;
+    margin-top:8px;padding-top:8px;border-top:1px solid rgba(232,220,192,.15);
+  }
+  .readout .stat{min-width:0}
+  .readout .stat b{
+    display:block;font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    font-variant-numeric:tabular-nums;font-size:17px;color:var(--amber-dim);
+  }
+  .readout .stat i{
+    font-style:normal;font-size:9px;font-weight:800;letter-spacing:.16em;
+    text-transform:uppercase;color:var(--amber-dim);opacity:.55;
+  }
+
+  /* ---------- Sections ---------- */
+  .section-label{
+    margin:20px 4px 8px;
+    font-size:11px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;
+    opacity:.65;
+  }
+
+  /* ---------- Zone rows ---------- */
+  .row{
+    display:flex;align-items:center;gap:10px;
+    background:var(--cardboard-hi);
+    border:2px dashed rgba(38,35,27,.45);
+    border-radius:10px;
+    padding:8px 10px;
+    margin-bottom:8px;
+  }
+  .row.penalty{
+    background:var(--paper);
+  }
+  .zone{
+    flex:0 0 44px;height:44px;
+    display:grid;place-items:center;
+    border:2.5px solid var(--ink);border-radius:8px;
+    font-size:20px;font-weight:900;letter-spacing:.02em;
+    background:transparent;
+  }
+  .zone.small{font-size:11px;letter-spacing:.04em;text-align:center;line-height:1.1}
+  .row.penalty .zone{border-color:var(--penalty);color:var(--penalty);font-size:12px;letter-spacing:.04em;text-align:center;line-height:1.1}
+  .stepper{
+    flex:1;display:flex;align-items:center;justify-content:center;gap:6px;min-width:0;
+  }
+  .stepper button{
+    font:inherit;width:52px;height:52px;border-radius:10px;
+    border:2px solid var(--ink);
+    background:rgba(38,35,27,.06);
+    color:var(--ink);
+    font-size:26px;font-weight:800;line-height:1;
+    cursor:pointer;touch-action:manipulation;
+    user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
+  }
+  .stepper button:active{transform:scale(.94);background:rgba(38,35,27,.14)}
+  .stepper button.minus{width:44px;height:44px;font-size:22px;border-width:2px;opacity:.75}
+  .count{
+    min-width:56px;text-align:center;
+    font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    font-variant-numeric:tabular-nums;
+    font-size:28px;font-weight:700;
+  }
+  .val{
+    flex:0 0 48px;text-align:right;
+    font-size:13px;font-weight:800;
+    font-variant-numeric:tabular-nums;
+    opacity:.7;
+  }
+  .row.penalty .val{color:var(--penalty);opacity:1}
+
+  /* ---------- Time ---------- */
+  .time-card{
+    background:var(--cardboard-hi);
+    border:2px dashed rgba(38,35,27,.45);
+    border-radius:10px;
+    padding:12px;
+  }
+  .time-top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .time-top label{font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;opacity:.7;flex:1}
+  .time-input{
+    display:flex;align-items:baseline;gap:6px;
+    background:var(--timer-bg);border-radius:8px;padding:6px 12px;
+  }
+  .time-input input{
+    width:110px;border:0;background:transparent;text-align:right;
+    font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    font-variant-numeric:tabular-nums;
+    font-size:24px;font-weight:700;color:var(--amber);
+    outline:none;
+  }
+  .time-input span{font-size:12px;font-weight:800;color:var(--amber-dim);opacity:.7}
+  input[type=range]{
+    -webkit-appearance:none;appearance:none;
+    width:100%;height:36px;background:transparent;touch-action:pan-y;
+  }
+  input[type=range]::-webkit-slider-runnable-track{
+    height:8px;border-radius:4px;
+    background:linear-gradient(90deg,var(--amber) var(--fill,0%),rgba(38,35,27,.25) var(--fill,0%));
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;appearance:none;
+    width:30px;height:30px;border-radius:50%;
+    background:var(--ink);border:3px solid var(--amber);
+    margin-top:-11px;
+    box-shadow:0 2px 6px rgba(0,0,0,.3);
+  }
+  input[type=range]::-moz-range-track{
+    height:8px;border-radius:4px;background:rgba(38,35,27,.25);
+  }
+  input[type=range]::-moz-range-progress{
+    height:8px;border-radius:4px;background:var(--amber);
+  }
+  input[type=range]::-moz-range-thumb{
+    width:24px;height:24px;border-radius:50%;
+    background:var(--ink);border:3px solid var(--amber);
+    box-shadow:0 2px 6px rgba(0,0,0,.3);
+  }
+
+  /* ---------- Reset ---------- */
+  .reset{
+    margin-top:22px;width:100%;
+    font:inherit;font-size:13px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;
+    padding:14px;border-radius:10px;
+    border:2px solid var(--ink);background:transparent;color:var(--ink);
+    cursor:pointer;touch-action:manipulation;
+  }
+  .reset:active{background:rgba(38,35,27,.12)}
+
+  .footnote{margin:14px 4px 0;font-size:11px;line-height:1.5;opacity:.55}
+
+  button:focus-visible,input:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+  .readout button:focus-visible{outline-color:var(--amber)}
+  @media (prefers-reduced-motion:reduce){
+    *{transition:none!important;animation:none!important}
+    .stepper button:active{transform:none}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <h1>IPSC <span data-i18n="subtitle">· Stagekalkylator</span></h1>
+    <div class="toggles">
+      <div class="pf-toggle lang-toggle" role="group" aria-label="Språk" id="langGroup">
+        <button id="langSv" type="button">SV</button>
+        <button id="langEn" type="button">EN</button>
+      </div>
+      <div class="pf-toggle" role="group" aria-label="Power factor">
+        <button id="pfMinor" type="button">Minor</button>
+        <button id="pfMajor" type="button" class="active">Major</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="readout" aria-live="polite">
+    <div class="hf-label">Hit factor</div>
+    <div class="hf" id="hf">—</div>
+    <div class="subrow">
+      <div class="stat"><b id="score">0</b><i data-i18n="points">Poäng</i></div>
+      <div class="stat"><b id="maxPts">—</b><i data-i18n="max">Max</i></div>
+      <div class="stat"><b id="pct">—</b><i data-i18n="ofMax">Av max</i></div>
+      <div class="stat"><b id="rounds">0</b><i data-i18n="rounds">Skott</i></div>
+    </div>
+  </div>
+
+  <div class="section-label" data-i18n="secHits">Träffar</div>
+  <div id="zoneRows"></div>
+
+  <div class="section-label" data-i18n="secPenalties">Avdrag · −10 p / st</div>
+  <div id="penaltyRows"></div>
+
+  <div class="section-label" data-i18n="secTime">Tid</div>
+  <div class="time-card">
+    <div class="time-top">
+      <label for="timeNum" data-i18n="stageTime">Stagetid</label>
+      <div class="time-input">
+        <input id="timeNum" type="number" inputmode="decimal" min="0" step="0.01" value="0" aria-label="Stagetid i sekunder">
+        <span data-i18n="secUnit">SEK</span>
+      </div>
+    </div>
+    <input id="timeSlider" type="range" min="0" max="60" step="0.01" value="0" aria-label="Stagetid, reglage">
+  </div>
+
+  <button class="reset" id="reset" type="button" data-i18n="reset">Nollställ stage</button>
+
+  <p class="footnote" data-i18n="footnote"></p>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------- Translations ----------
+  var I18N = {
+    sv: {
+      docTitle: "IPSC Stagekalkylator",
+      subtitle: "· Stagekalkylator",
+      points: "Poäng",
+      max: "Max",
+      ofMax: "Av max",
+      rounds: "Skott",
+      secHits: "Träffar",
+      secPenalties: "Avdrag · −10 p / st",
+      secTime: "Tid",
+      stageTime: "Stagetid",
+      secUnit: "SEK",
+      steelZone: "PLÅT",
+      reset: "Nollställ stage",
+      footnote: "Poäng: A = 5 · C = 4/3 · D = 2/1 (Major/Minor) · Plåt = 5 oavsett faktor. B\u2011zon på Classic\u2011mål räknas som C. Stående plåt registreras som miss. Miss, FTE (failure to engage), no\u2011shoot och procedurfel ger −10 p vardera. Vid FTE fyller du i målets missar som vanligt — FTE\u2011avdraget läggs ovanpå. Antal skott beräknas automatiskt som träffar + missar. Stagepoäng under 0 räknas som 0. Hit factor = poäng ÷ tid.",
+      decrease: "Minska",
+      increase: "Öka",
+      ariaNames: { A:"A", C:"C", D:"D", S:"plåt", M:"miss", F:"FTE", NS:"no-shoot", P:"procedurfel" },
+      ariaTime: "Stagetid i sekunder",
+      ariaSlider: "Stagetid, reglage",
+      ariaLang: "Språk",
+      unit: "p"
+    },
+    en: {
+      docTitle: "IPSC Stage Calculator",
+      subtitle: "· Stage Calculator",
+      points: "Points",
+      max: "Max",
+      ofMax: "Of max",
+      rounds: "Rounds",
+      secHits: "Hits",
+      secPenalties: "Penalties · −10 pts each",
+      secTime: "Time",
+      stageTime: "Stage time",
+      secUnit: "SEC",
+      steelZone: "STEEL",
+      reset: "Reset stage",
+      footnote: "Scoring: A = 5 · C = 4/3 · D = 2/1 (Major/Minor) · Steel = 5 regardless of factor. The B zone on Classic targets counts as C. Standing steel is recorded as a miss. Miss, FTE (failure to engage), no\u2011shoot and procedure errors cost −10 pts each. For an FTE, enter the target's misses as usual — the FTE penalty comes on top. The round count is calculated automatically as hits + misses. Stage points below 0 count as 0. Hit factor = points ÷ time.",
+      decrease: "Decrease",
+      increase: "Increase",
+      ariaNames: { A:"A", C:"C", D:"D", S:"steel", M:"miss", F:"FTE", NS:"no-shoot", P:"procedure error" },
+      ariaTime: "Stage time in seconds",
+      ariaSlider: "Stage time slider",
+      ariaLang: "Language",
+      unit: "pts"
+    }
+  };
+
+  // ---------- State ----------
+  var state = {
+    lang: "sv",
+    pf: "major",
+    counts: { A:0, C:0, D:0, S:0, M:0, F:0, NS:0, P:0 },
+    time: 0
+  };
+
+  var ZONE_PTS = {
+    major: { A:5, C:4, D:2, S:5 },
+    minor: { A:5, C:3, D:1, S:5 }
+  };
+  var PENALTY = 10;
+
+  function T(){ return I18N[state.lang]; }
+
+  // Language persistence — degrades gracefully where storage is unavailable
+  function storedLang(){
+    try { return window.localStorage.getItem("ipsc-lang"); } catch(e){ return null; }
+  }
+  function storeLang(l){
+    try { window.localStorage.setItem("ipsc-lang", l); } catch(e){}
+  }
+
+  // ---------- Row definitions ----------
+  var zoneDefs = [
+    { key:"A", label:"A" },
+    { key:"C", label:"C" },
+    { key:"D", label:"D" },
+    { key:"S", label:"PLÅT", zoneI18n:"steelZone", small:true }
+  ];
+  var penaltyDefs = [
+    { key:"M",  label:"MISS" },
+    { key:"F",  label:"FTE" },
+    { key:"NS", label:"NO-<br>SHOOT" },
+    { key:"P",  label:"PROC" }
+  ];
+
+  function makeRow(def, isPenalty){
+    var row = document.createElement("div");
+    row.className = "row" + (isPenalty ? " penalty" : "");
+    row.innerHTML =
+      '<div class="zone' + (def.small ? " small" : "") + '"' +
+        (def.zoneI18n ? ' data-i18n="' + def.zoneI18n + '"' : '') + '>' + def.label + '</div>' +
+      '<div class="stepper">' +
+        '<button type="button" class="minus" data-hold data-target="' + def.key + '" data-delta="-1" data-aria="dec:' + def.key + '">−</button>' +
+        '<span class="count" id="cnt' + def.key + '">0</span>' +
+        '<button type="button" data-hold data-target="' + def.key + '" data-delta="1" data-aria="inc:' + def.key + '">+</button>' +
+      '</div>' +
+      '<div class="val" id="val' + def.key + '"></div>';
+    return row;
+  }
+
+  var zoneRows = document.getElementById("zoneRows");
+  zoneDefs.forEach(function(d){ zoneRows.appendChild(makeRow(d, false)); });
+  var penaltyRows = document.getElementById("penaltyRows");
+  penaltyDefs.forEach(function(d){ penaltyRows.appendChild(makeRow(d, true)); });
+
+  // ---------- Elements ----------
+  var el = {
+    hf: document.getElementById("hf"),
+    score: document.getElementById("score"),
+    maxPts: document.getElementById("maxPts"),
+    pct: document.getElementById("pct"),
+    rounds: document.getElementById("rounds"),
+    timeNum: document.getElementById("timeNum"),
+    timeSlider: document.getElementById("timeSlider"),
+    pfMajor: document.getElementById("pfMajor"),
+    pfMinor: document.getElementById("pfMinor"),
+    langSv: document.getElementById("langSv"),
+    langEn: document.getElementById("langEn")
+  };
+
+  // ---------- Calculation ----------
+  function calc(){
+    var pts = ZONE_PTS[state.pf];
+    var c = state.counts;
+    var raw = c.A*pts.A + c.C*pts.C + c.D*pts.D + c.S*pts.S
+            - (c.M + c.F + c.NS + c.P)*PENALTY;
+    var score = Math.max(0, raw);
+    // Round count is derived automatically: every required hit is either
+    // a scoring hit (A/C/D/steel) or a recorded miss.
+    var rounds = c.A + c.C + c.D + c.S + c.M;
+    var hf = state.time > 0 ? score/state.time : null;
+    return { score:score, raw:raw, rounds:rounds, hf:hf };
+  }
+
+  // ---------- Render ----------
+  function render(){
+    var r = calc();
+    var t = T();
+    var pts = ZONE_PTS[state.pf];
+
+    zoneDefs.forEach(function(d){
+      document.getElementById("cnt"+d.key).textContent = state.counts[d.key];
+      document.getElementById("val"+d.key).textContent = pts[d.key] + " " + t.unit;
+    });
+    penaltyDefs.forEach(function(d){
+      document.getElementById("cnt"+d.key).textContent = state.counts[d.key];
+      document.getElementById("val"+d.key).textContent = "−10 " + t.unit;
+    });
+
+    el.score.textContent = r.score;
+    el.hf.textContent = r.hf === null ? "—" : r.hf.toFixed(4);
+    el.rounds.textContent = r.rounds;
+
+    if (r.rounds > 0){
+      var max = r.rounds * 5;
+      el.maxPts.textContent = max;
+      el.pct.textContent = (100 * r.score / max).toFixed(1) + "%";
+    } else {
+      el.maxPts.textContent = "—";
+      el.pct.textContent = "—";
+    }
+
+    // Slider fill
+    var pctFill = (parseFloat(el.timeSlider.value) / parseFloat(el.timeSlider.max)) * 100;
+    el.timeSlider.style.setProperty("--fill", (isFinite(pctFill) ? pctFill : 0) + "%");
+  }
+
+  // ---------- Language ----------
+  function applyLang(lang){
+    state.lang = lang;
+    storeLang(lang);
+    var t = T();
+    document.documentElement.lang = lang;
+    document.title = t.docTitle;
+    document.querySelectorAll("[data-i18n]").forEach(function(n){
+      if (t[n.dataset.i18n] !== undefined) n.textContent = t[n.dataset.i18n];
+    });
+    document.querySelectorAll("[data-aria]").forEach(function(b){
+      var p = b.dataset.aria.split(":");
+      var verb = p[0] === "dec" ? t.decrease : t.increase;
+      var what = t.ariaNames[p[1]] || p[1];
+      b.setAttribute("aria-label", verb + " " + what);
+    });
+    el.timeNum.setAttribute("aria-label", t.ariaTime);
+    el.timeSlider.setAttribute("aria-label", t.ariaSlider);
+    document.getElementById("langGroup").setAttribute("aria-label", t.ariaLang);
+    el.langSv.classList.toggle("active", lang === "sv");
+    el.langEn.classList.toggle("active", lang === "en");
+    render();
+  }
+  el.langSv.addEventListener("click", function(){ applyLang("sv"); });
+  el.langEn.addEventListener("click", function(){ applyLang("en"); });
+
+  // ---------- Steppers (tap + press-and-hold repeat) ----------
+  function applyDelta(target, delta){
+    state.counts[target] = Math.max(0, state.counts[target] + delta);
+    render();
+  }
+
+  var holdTimer = null, holdInterval = null;
+  function clearHold(){
+    clearTimeout(holdTimer); clearInterval(holdInterval);
+    holdTimer = holdInterval = null;
+  }
+  document.addEventListener("pointerdown", function(e){
+    var btn = e.target.closest("[data-hold]");
+    if (!btn) return;
+    var target = btn.dataset.target, delta = parseInt(btn.dataset.delta, 10);
+    applyDelta(target, delta);
+    holdTimer = setTimeout(function(){
+      holdInterval = setInterval(function(){ applyDelta(target, delta); }, 90);
+    }, 450);
+  });
+  ["pointerup","pointercancel","pointerleave"].forEach(function(ev){
+    document.addEventListener(ev, clearHold, true);
+  });
+  document.addEventListener("contextmenu", function(e){
+    if (e.target.closest("[data-hold]")) e.preventDefault();
+  });
+  // Keyboard support (Enter/Space triggers click with detail 0)
+  document.addEventListener("click", function(e){
+    var btn = e.target.closest("[data-hold]");
+    if (btn && e.detail === 0){
+      applyDelta(btn.dataset.target, parseInt(btn.dataset.delta, 10));
+    }
+  });
+
+  // ---------- Time ---------- 
+  el.timeSlider.addEventListener("input", function(){
+    state.time = parseFloat(el.timeSlider.value) || 0;
+    el.timeNum.value = state.time.toFixed(2);
+    render();
+  });
+  el.timeNum.addEventListener("input", function(){
+    var v = parseFloat(el.timeNum.value.replace(",", "."));
+    if (!isFinite(v) || v < 0) v = 0;
+    state.time = Math.round(v * 100) / 100;
+    var max = parseFloat(el.timeSlider.max);
+    if (state.time > max){
+      el.timeSlider.max = Math.ceil(state.time / 30) * 30;
+    }
+    el.timeSlider.value = state.time;
+    render();
+  });
+  el.timeNum.addEventListener("blur", function(){
+    el.timeNum.value = state.time.toFixed(2);
+  });
+
+  // ---------- Power factor ----------
+  function setPF(pf){
+    state.pf = pf;
+    el.pfMajor.classList.toggle("active", pf === "major");
+    el.pfMinor.classList.toggle("active", pf === "minor");
+    render();
+  }
+  el.pfMajor.addEventListener("click", function(){ setPF("major"); });
+  el.pfMinor.addEventListener("click", function(){ setPF("minor"); });
+
+  // ---------- Reset ----------
+  document.getElementById("reset").addEventListener("click", function(){
+    state.counts = { A:0, C:0, D:0, S:0, M:0, F:0, NS:0, P:0 };
+    state.time = 0;
+    el.timeSlider.value = 0;
+    el.timeNum.value = "0.00";
+    render();
+  });
+
+  // ---------- Init ----------
+  var saved = storedLang();
+  var initialLang = (saved === "sv" || saved === "en")
+    ? saved
+    : (((navigator.language || "").toLowerCase().indexOf("sv") === 0) ? "sv" : "en");
+  applyLang(initialLang);
+})();
+</script>
+</body>
+</html>
