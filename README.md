@@ -2,7 +2,7 @@
 
 Mobile-friendly calculator for IPSC stage scores and hit factor — runs entirely in the browser, offline, with no dependencies.
 
-**Live:** `https://<username>.github.io/<repo-name>/` *(update the link once Pages is enabled)*
+**Live:** `https://nevva.github.io/ipsc-calculator/` *(update the link once Pages is enabled)*
 
 ### Features
 

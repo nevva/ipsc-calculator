@@ -234,6 +234,55 @@
   }
   .reset:active{background:rgba(38,35,27,.12)}
 
+  /* ---------- History ---------- */
+  .save{
+    margin-top:10px;width:100%;
+    font:inherit;font-size:13px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;
+    padding:14px;border-radius:10px;
+    border:2px solid var(--ink);background:var(--ink);color:var(--cardboard-hi);
+    cursor:pointer;touch-action:manipulation;
+  }
+  .save:active{transform:scale(.99);opacity:.9}
+  .save.editing{background:var(--penalty);border-color:var(--penalty);color:#fff}
+  .history{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+  .hist-empty{font-size:12px;line-height:1.5;opacity:.55;padding:4px 4px 2px}
+  .hist-item{
+    display:flex;align-items:center;gap:10px;
+    background:var(--cardboard-hi);
+    border:2px dashed rgba(38,35,27,.45);
+    border-radius:12px;
+    padding:10px 10px 10px 12px;
+  }
+  .hist-main{flex:1;min-width:0}
+  .hist-hf{
+    font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    font-variant-numeric:tabular-nums;
+    font-size:20px;font-weight:700;line-height:1.1;
+  }
+  .hist-sub{
+    font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    font-variant-numeric:tabular-nums;
+    font-size:11px;opacity:.7;margin-top:3px;overflow-wrap:anywhere;
+  }
+  .hist-actions{display:flex;gap:6px;flex:0 0 auto}
+  .hist-actions button{
+    font:inherit;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+    min-height:48px;padding:8px 12px;border-radius:8px;
+    border:2px solid var(--ink);background:transparent;color:var(--ink);
+    cursor:pointer;touch-action:manipulation;
+  }
+  .hist-actions button:active{background:rgba(38,35,27,.12)}
+  .hist-actions button.remove{color:var(--penalty);border-color:var(--penalty)}
+  .hist-actions button.remove:active{background:rgba(178,58,43,.12)}
+  .clear-history{
+    margin-top:2px;width:100%;
+    font:inherit;font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;
+    padding:12px;border-radius:10px;
+    border:2px solid var(--penalty);background:transparent;color:var(--penalty);
+    cursor:pointer;touch-action:manipulation;
+  }
+  .clear-history:active{background:rgba(178,58,43,.12)}
+
   .footnote{margin:14px 4px 0;font-size:11px;line-height:1.5;opacity:.55}
 
   button:focus-visible,input:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
@@ -295,6 +344,10 @@
 
   <button class="reset" id="reset" type="button" data-i18n="reset">Nollställ stage</button>
 
+  <div class="section-label" data-i18n="secHistory">Historik</div>
+  <button class="save" id="save" type="button">Spara stage</button>
+  <div class="history" id="history"></div>
+
   <p class="footnote" data-i18n="footnote"></p>
 
 </div>
@@ -323,6 +376,14 @@
       calcNoTime: "ange tid",
       calcFloor: "Råpoäng {raw} golvas till 0.",
       reset: "Nollställ stage",
+      secHistory: "Historik",
+      save: "Spara stage",
+      update: "Uppdatera stage",
+      histEmpty: "Ingen sparad stage ännu.",
+      edit: "Ändra",
+      remove: "Ta bort",
+      clearHistory: "Rensa historik",
+      confirmClear: "Rensa all sparad historik?",
       footnote: "Poäng: A = 5 · C = 4/3 · D = 2/1 (Major/Minor) · Plåt = 5 oavsett faktor. B\u2011zon på Classic\u2011mål räknas som C. Stående plåt registreras som miss. Miss, no\u2011shoot och procedurfel ger −10 p vardera. Antal skott beräknas automatiskt som träffar + missar. Stagepoäng under 0 räknas som 0. Hit factor = poäng ÷ tid.",
       decrease: "Minska",
       increase: "Öka",
@@ -350,6 +411,14 @@
       calcNoTime: "enter time",
       calcFloor: "Raw {raw} floored to 0.",
       reset: "Reset stage",
+      secHistory: "History",
+      save: "Save stage",
+      update: "Update stage",
+      histEmpty: "No stage saved yet.",
+      edit: "Edit",
+      remove: "Remove",
+      clearHistory: "Clear history",
+      confirmClear: "Clear all saved history?",
       footnote: "Scoring: A = 5 · C = 4/3 · D = 2/1 (Major/Minor) · Steel = 5 regardless of factor. The B zone on Classic targets counts as C. Standing steel is recorded as a miss. Miss, no\u2011shoot and procedure errors cost −10 pts each. The round count is calculated automatically as hits + misses. Stage points below 0 count as 0. Hit factor = points ÷ time.",
       decrease: "Decrease",
       increase: "Increase",
@@ -366,7 +435,9 @@
     lang: "sv",
     pf: "major",
     counts: { A:0, C:0, D:0, S:0, M:0, NS:0, P:0 },
-    time: 0
+    time: 0,
+    history: [],       // list of saved stages, newest last
+    editingId: null    // id of the history entry currently being edited, or null
   };
 
   var ZONE_PTS = {
@@ -383,6 +454,45 @@
   }
   function storeLang(l){
     try { window.localStorage.setItem("ipsc-lang", l); } catch(e){}
+  }
+
+  // History persistence — same graceful-degradation contract as the language store
+  function storedHistory(){
+    try {
+      var raw = window.localStorage.getItem("ipsc-history");
+      var list = raw ? JSON.parse(raw) : [];
+      return sanitizeHistory(list);
+    } catch(e){ return []; }
+  }
+  function storeHistory(){
+    try { window.localStorage.setItem("ipsc-history", JSON.stringify(state.history)); } catch(e){}
+  }
+  // Guard against malformed/tampered storage: keep only well-formed entries.
+  function sanitizeHistory(list){
+    if (!list || typeof list.length !== "number") return [];
+    var out = [];
+    for (var i = 0; i < list.length; i++){
+      var e = list[i];
+      if (e && typeof e.id === "number" && e.counts){
+        out.push({
+          id: e.id,
+          pf: e.pf === "minor" ? "minor" : "major",
+          time: (typeof e.time === "number" && e.time >= 0) ? e.time : 0,
+          counts: copyCounts(e.counts),
+          score: typeof e.score === "number" ? e.score : 0,
+          hf: typeof e.hf === "number" ? e.hf : null,
+          rounds: typeof e.rounds === "number" ? e.rounds : 0
+        });
+      }
+    }
+    return out;
+  }
+  function copyCounts(c){
+    c = c || {};
+    return {
+      A:+c.A||0, C:+c.C||0, D:+c.D||0, S:+c.S||0,
+      M:+c.M||0, NS:+c.NS||0, P:+c.P||0
+    };
   }
 
   // ---------- Row definitions ----------
@@ -433,7 +543,9 @@
     pfMajor: document.getElementById("pfMajor"),
     pfMinor: document.getElementById("pfMinor"),
     langSv: document.getElementById("langSv"),
-    langEn: document.getElementById("langEn")
+    langEn: document.getElementById("langEn"),
+    save: document.getElementById("save"),
+    history: document.getElementById("history")
   };
 
   // ---------- Calculation ----------
@@ -543,6 +655,8 @@
     document.getElementById("langGroup").setAttribute("aria-label", t.ariaLang);
     el.langSv.classList.toggle("active", lang === "sv");
     el.langEn.classList.toggle("active", lang === "en");
+    updateSaveButton();
+    renderHistory();
     render();
   }
   el.langSv.addEventListener("click", function(){ applyLang("sv"); });
@@ -613,16 +727,150 @@
   el.pfMajor.addEventListener("click", function(){ setPF("major"); });
   el.pfMinor.addEventListener("click", function(){ setPF("minor"); });
 
+  // ---------- History ----------
+  // Entries hold the raw inputs (pf/time/counts) plus the derived score/hf/rounds
+  // so the list can render without recomputing, and "Edit" can restore inputs.
+  function nextId(){
+    var m = 0;
+    state.history.forEach(function(e){ if (e.id > m) m = e.id; });
+    return m + 1;
+  }
+  function findEntry(id){
+    for (var i = 0; i < state.history.length; i++){
+      if (state.history[i].id === id) return state.history[i];
+    }
+    return null;
+  }
+
+  function updateSaveButton(){
+    var t = T();
+    var editing = state.editingId !== null;
+    el.save.textContent = editing ? t.update : t.save;
+    el.save.classList.toggle("editing", editing);
+  }
+
+  function saveStage(){
+    var r = calc();
+    var entry = {
+      id: state.editingId !== null ? state.editingId : nextId(),
+      pf: state.pf,
+      time: state.time,
+      counts: copyCounts(state.counts),
+      score: r.score,
+      hf: r.hf,
+      rounds: r.rounds
+    };
+    if (state.editingId !== null){
+      var existing = findEntry(state.editingId);
+      if (existing){
+        for (var k in entry){ if (entry.hasOwnProperty(k)) existing[k] = entry[k]; }
+      } else {
+        state.history.push(entry);
+      }
+      state.editingId = null;
+    } else {
+      state.history.push(entry);
+    }
+    storeHistory();
+    updateSaveButton();
+    renderHistory();
+  }
+
+  function editStage(id){
+    var e = findEntry(id);
+    if (!e) return;
+    state.counts = copyCounts(e.counts);
+    state.time = e.time;
+    state.editingId = id;
+    setPF(e.pf);           // updates toggle + calls render()
+    syncTimeInputs();
+    updateSaveButton();
+    render();
+    window.scrollTo(0, 0);
+  }
+
+  function removeStage(id){
+    var out = [];
+    for (var i = 0; i < state.history.length; i++){
+      if (state.history[i].id !== id) out.push(state.history[i]);
+    }
+    state.history = out;
+    if (state.editingId === id){ state.editingId = null; updateSaveButton(); }
+    storeHistory();
+    renderHistory();
+  }
+
+  function clearHistory(){
+    if (!state.history.length) return;
+    if (!window.confirm(T().confirmClear)) return;
+    state.history = [];
+    state.editingId = null;
+    storeHistory();
+    updateSaveButton();
+    renderHistory();
+  }
+
+  // Rebuilds #history. Only numbers and controlled i18n label strings are
+  // interpolated here — never free user text — so innerHTML is safe.
+  function renderHistory(){
+    var t = T();
+    if (!state.history.length){
+      el.history.innerHTML = '<div class="hist-empty">' + t.histEmpty + '</div>';
+      return;
+    }
+    var html = "";
+    for (var i = state.history.length - 1; i >= 0; i--){   // newest first
+      var e = state.history[i];
+      var max = e.rounds * 5;
+      var hfTxt = (e.hf === null || e.hf === undefined) ? "—" : e.hf.toFixed(4);
+      var pfLab = e.pf === "minor" ? "Minor" : "Major";
+      var sub = e.score + " / " + max + " " + t.unit +
+                " · " + e.time.toFixed(2) + " " + t.secUnit +
+                " · " + pfLab;
+      html +=
+        '<div class="hist-item">' +
+          '<div class="hist-main">' +
+            '<div class="hist-hf">HF ' + hfTxt + '</div>' +
+            '<div class="hist-sub">' + sub + '</div>' +
+          '</div>' +
+          '<div class="hist-actions">' +
+            '<button type="button" class="edit" data-hist-edit="' + e.id + '">' + t.edit + '</button>' +
+            '<button type="button" class="remove" data-hist-remove="' + e.id + '">' + t.remove + '</button>' +
+          '</div>' +
+        '</div>';
+    }
+    html += '<button type="button" class="clear-history" id="clearHistory">' + t.clearHistory + '</button>';
+    el.history.innerHTML = html;
+  }
+
+  el.save.addEventListener("click", saveStage);
+  el.history.addEventListener("click", function(e){
+    var ed = e.target.closest("[data-hist-edit]");
+    if (ed){ editStage(parseInt(ed.getAttribute("data-hist-edit"), 10)); return; }
+    var rm = e.target.closest("[data-hist-remove]");
+    if (rm){ removeStage(parseInt(rm.getAttribute("data-hist-remove"), 10)); return; }
+    if (e.target.closest("#clearHistory")){ clearHistory(); }
+  });
+
   // ---------- Reset ----------
+  function syncTimeInputs(){
+    var max = parseFloat(el.timeSlider.max);
+    if (state.time > max) el.timeSlider.max = Math.ceil(state.time / 30) * 30;
+    el.timeSlider.value = state.time;
+    el.timeNum.value = state.time.toFixed(2);
+  }
   document.getElementById("reset").addEventListener("click", function(){
     state.counts = { A:0, C:0, D:0, S:0, M:0, NS:0, P:0 };
     state.time = 0;
+    state.editingId = null;
     el.timeSlider.value = 0;
     el.timeNum.value = "0.00";
+    updateSaveButton();
     render();
   });
 
   // ---------- Init ----------
+  state.history = storedHistory();
   var saved = storedLang();
   var initialLang = (saved === "sv" || saved === "en")
     ? saved
