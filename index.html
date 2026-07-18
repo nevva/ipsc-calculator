@@ -97,54 +97,59 @@
     opacity:.65;
   }
 
-  /* ---------- Zone rows ---------- */
-  .row{
-    display:flex;align-items:center;gap:10px;
+  /* ---------- Target cards (2-column grid) ---------- */
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:10px;
+  }
+  .card{
     background:var(--cardboard-hi);
     border:2px dashed rgba(38,35,27,.45);
-    border-radius:10px;
-    padding:8px 10px;
-    margin-bottom:8px;
+    border-radius:12px;
+    padding:10px 10px 12px;
+    display:flex;flex-direction:column;gap:10px;
   }
-  .row.penalty{
-    background:var(--paper);
+  .card.penalty{background:var(--paper)}
+  /* An odd last card would leave a gap — stretch it across both columns. */
+  .grid > .card:last-child:nth-child(odd){grid-column:1 / -1}
+  .card-top{
+    display:flex;align-items:center;justify-content:space-between;gap:6px;
+    padding:0 2px;min-height:26px;
   }
-  .zone{
-    flex:0 0 44px;height:44px;
-    display:grid;place-items:center;
-    border:2.5px solid var(--ink);border-radius:8px;
-    font-size:20px;font-weight:900;letter-spacing:.02em;
-    background:transparent;
+  .zlab{
+    font-size:22px;font-weight:900;letter-spacing:.02em;line-height:1;
   }
-  .zone.small{font-size:11px;letter-spacing:.04em;text-align:center;line-height:1.1}
-  .row.penalty .zone{border-color:var(--penalty);color:var(--penalty);font-size:12px;letter-spacing:.04em;text-align:center;line-height:1.1}
+  .zlab.small{font-size:13px;font-weight:800;letter-spacing:.06em}
+  .card.penalty .zlab{color:var(--penalty);font-size:13px;font-weight:800;letter-spacing:.05em}
+  .zval{
+    font-size:12px;font-weight:800;letter-spacing:.02em;
+    font-variant-numeric:tabular-nums;opacity:.6;white-space:nowrap;
+  }
+  .card.penalty .zval{color:var(--penalty);opacity:1}
   .stepper{
-    flex:1;display:flex;align-items:center;justify-content:center;gap:6px;min-width:0;
+    display:flex;align-items:center;justify-content:space-between;gap:8px;
   }
   .stepper button{
-    font:inherit;width:52px;height:52px;border-radius:10px;
+    font:inherit;flex:0 0 auto;
+    width:56px;height:56px;border-radius:12px;
     border:2px solid var(--ink);
     background:rgba(38,35,27,.06);
     color:var(--ink);
-    font-size:26px;font-weight:800;line-height:1;
+    font-size:30px;font-weight:800;line-height:1;
     cursor:pointer;touch-action:manipulation;
+    display:grid;place-items:center;
     user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
   }
   .stepper button:active{transform:scale(.94);background:rgba(38,35,27,.14)}
-  .stepper button.minus{width:44px;height:44px;font-size:22px;border-width:2px;opacity:.75}
+  .stepper button.minus{opacity:.7}
+  .grid > .card:last-child:nth-child(odd) .stepper{max-width:260px;margin-inline:auto;width:100%}
   .count{
-    min-width:56px;text-align:center;
+    flex:1;text-align:center;min-width:0;
     font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
     font-variant-numeric:tabular-nums;
-    font-size:28px;font-weight:700;
+    font-size:30px;font-weight:700;line-height:1;
   }
-  .val{
-    flex:0 0 48px;text-align:right;
-    font-size:13px;font-weight:800;
-    font-variant-numeric:tabular-nums;
-    opacity:.7;
-  }
-  .row.penalty .val{color:var(--penalty);opacity:1}
 
   /* ---------- Time ---------- */
   .time-card{
@@ -268,10 +273,10 @@
   </div>
 
   <div class="section-label" data-i18n="secHits">Träffar</div>
-  <div id="zoneRows"></div>
+  <div id="zoneRows" class="grid"></div>
 
   <div class="section-label" data-i18n="secPenalties">Avdrag · −10 p / st</div>
-  <div id="penaltyRows"></div>
+  <div id="penaltyRows" class="grid"></div>
 
   <div class="section-label" data-i18n="secTime">Tid</div>
   <div class="time-card">
@@ -318,10 +323,10 @@
       calcNoTime: "ange tid",
       calcFloor: "Råpoäng {raw} golvas till 0.",
       reset: "Nollställ stage",
-      footnote: "Poäng: A = 5 · C = 4/3 · D = 2/1 (Major/Minor) · Plåt = 5 oavsett faktor. B\u2011zon på Classic\u2011mål räknas som C. Stående plåt registreras som miss. Miss, FTE (failure to engage), no\u2011shoot och procedurfel ger −10 p vardera. Vid FTE fyller du i målets missar som vanligt — FTE\u2011avdraget läggs ovanpå. Antal skott beräknas automatiskt som träffar + missar. Stagepoäng under 0 räknas som 0. Hit factor = poäng ÷ tid.",
+      footnote: "Poäng: A = 5 · C = 4/3 · D = 2/1 (Major/Minor) · Plåt = 5 oavsett faktor. B\u2011zon på Classic\u2011mål räknas som C. Stående plåt registreras som miss. Miss, no\u2011shoot och procedurfel ger −10 p vardera. Antal skott beräknas automatiskt som träffar + missar. Stagepoäng under 0 räknas som 0. Hit factor = poäng ÷ tid.",
       decrease: "Minska",
       increase: "Öka",
-      ariaNames: { A:"A", C:"C", D:"D", S:"plåt", M:"miss", F:"FTE", NS:"no-shoot", P:"procedurfel" },
+      ariaNames: { A:"A", C:"C", D:"D", S:"plåt", M:"miss", NS:"no-shoot", P:"procedurfel" },
       ariaTime: "Stagetid i sekunder",
       ariaSlider: "Stagetid, reglage",
       ariaLang: "Språk",
@@ -345,10 +350,10 @@
       calcNoTime: "enter time",
       calcFloor: "Raw {raw} floored to 0.",
       reset: "Reset stage",
-      footnote: "Scoring: A = 5 · C = 4/3 · D = 2/1 (Major/Minor) · Steel = 5 regardless of factor. The B zone on Classic targets counts as C. Standing steel is recorded as a miss. Miss, FTE (failure to engage), no\u2011shoot and procedure errors cost −10 pts each. For an FTE, enter the target's misses as usual — the FTE penalty comes on top. The round count is calculated automatically as hits + misses. Stage points below 0 count as 0. Hit factor = points ÷ time.",
+      footnote: "Scoring: A = 5 · C = 4/3 · D = 2/1 (Major/Minor) · Steel = 5 regardless of factor. The B zone on Classic targets counts as C. Standing steel is recorded as a miss. Miss, no\u2011shoot and procedure errors cost −10 pts each. The round count is calculated automatically as hits + misses. Stage points below 0 count as 0. Hit factor = points ÷ time.",
       decrease: "Decrease",
       increase: "Increase",
-      ariaNames: { A:"A", C:"C", D:"D", S:"steel", M:"miss", F:"FTE", NS:"no-shoot", P:"procedure error" },
+      ariaNames: { A:"A", C:"C", D:"D", S:"steel", M:"miss", NS:"no-shoot", P:"procedure error" },
       ariaTime: "Stage time in seconds",
       ariaSlider: "Stage time slider",
       ariaLang: "Language",
@@ -360,7 +365,7 @@
   var state = {
     lang: "sv",
     pf: "major",
-    counts: { A:0, C:0, D:0, S:0, M:0, F:0, NS:0, P:0 },
+    counts: { A:0, C:0, D:0, S:0, M:0, NS:0, P:0 },
     time: 0
   };
 
@@ -389,24 +394,25 @@
   ];
   var penaltyDefs = [
     { key:"M",  label:"MISS" },
-    { key:"F",  label:"FTE" },
-    { key:"NS", label:"NO-<br>SHOOT" },
+    { key:"NS", label:"NO-SHOOT" },
     { key:"P",  label:"PROC" }
   ];
 
   function makeRow(def, isPenalty){
-    var row = document.createElement("div");
-    row.className = "row" + (isPenalty ? " penalty" : "");
-    row.innerHTML =
-      '<div class="zone' + (def.small ? " small" : "") + '"' +
-        (def.zoneI18n ? ' data-i18n="' + def.zoneI18n + '"' : '') + '>' + def.label + '</div>' +
+    var card = document.createElement("div");
+    card.className = "card" + (isPenalty ? " penalty" : "");
+    card.innerHTML =
+      '<div class="card-top">' +
+        '<span class="zlab' + (def.small ? " small" : "") + '"' +
+          (def.zoneI18n ? ' data-i18n="' + def.zoneI18n + '"' : '') + '>' + def.label + '</span>' +
+        '<span class="zval" id="val' + def.key + '"></span>' +
+      '</div>' +
       '<div class="stepper">' +
         '<button type="button" class="minus" data-hold data-target="' + def.key + '" data-delta="-1" data-aria="dec:' + def.key + '">−</button>' +
         '<span class="count" id="cnt' + def.key + '">0</span>' +
-        '<button type="button" data-hold data-target="' + def.key + '" data-delta="1" data-aria="inc:' + def.key + '">+</button>' +
-      '</div>' +
-      '<div class="val" id="val' + def.key + '"></div>';
-    return row;
+        '<button type="button" class="plus" data-hold data-target="' + def.key + '" data-delta="1" data-aria="inc:' + def.key + '">+</button>' +
+      '</div>';
+    return card;
   }
 
   var zoneRows = document.getElementById("zoneRows");
@@ -435,7 +441,7 @@
     var pts = ZONE_PTS[state.pf];
     var c = state.counts;
     var raw = c.A*pts.A + c.C*pts.C + c.D*pts.D + c.S*pts.S
-            - (c.M + c.F + c.NS + c.P)*PENALTY;
+            - (c.M + c.NS + c.P)*PENALTY;
     var score = Math.max(0, raw);
     // Round count is derived automatically: every required hit is either
     // a scoring hit (A/C/D/steel) or a recorded miss.
@@ -461,7 +467,7 @@
         terms.push(lab + " " + n + "×" + pts[d.key]);
       }
     });
-    var penN = c.M + c.F + c.NS + c.P;
+    var penN = c.M + c.NS + c.P;
     var expr = terms.length ? terms.join(" + ") : "0";
     if (penN > 0) expr += " − " + penN + "×" + PENALTY;
 
@@ -609,7 +615,7 @@
 
   // ---------- Reset ----------
   document.getElementById("reset").addEventListener("click", function(){
-    state.counts = { A:0, C:0, D:0, S:0, M:0, F:0, NS:0, P:0 };
+    state.counts = { A:0, C:0, D:0, S:0, M:0, NS:0, P:0 };
     state.time = 0;
     el.timeSlider.value = 0;
     el.timeNum.value = "0.00";

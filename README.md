@@ -6,10 +6,10 @@ Mobile-friendly calculator for IPSC stage scores and hit factor — runs entirel
 
 ### Features
 
-- Large +/− buttons for A, C, D, steel, miss, FTE, no-shoot and procedure errors — press and hold to repeat
+- Large +/− buttons for A, C, D, steel, miss, no-shoot and procedure errors, laid out as a two-column grid of touch targets — press and hold to repeat
 - Steel targets score 5 points regardless of power factor
-- Miss and failure to engage (FTE) are tracked separately
 - Round count, max points and percentage are calculated automatically from hits + misses
+- Live calculation breakdown showing the current numbers plugged into the formula
 - Time via slider or numeric field (0.01 s steps)
 - Major/Minor toggle that updates zone values instantly
 - Hit factor, points and percent of max recalculated in real time in the sticky readout
@@ -25,7 +25,6 @@ Mobile-friendly calculator for IPSC stage scores and hit factor — runs entirel
 | D | 2 | 1 |
 | Steel (per falling target) | 5 | 5 |
 | Miss | −10 | −10 |
-| FTE (per unengaged target) | −10 | −10 |
 | No-shoot (per hit) | −10 | −10 |
 | Procedure error | −10 | −10 |
 
@@ -36,7 +35,7 @@ Mobile-friendly calculator for IPSC stage scores and hit factor — runs entirel
 - **Steel (Rule 4.3.1.4, Appendix C):** scoring metal targets must be shot and fall or overturn to score, and plates do not recognize power — hence a flat 5 points. Standing steel scores zero plus a 10-point penalty, so it is entered as a miss
 - **Misses (Section 9.4):** each miss is penalized minus 10 points, except for disappearing targets (Rule 9.9.2). Paper targets are normally shot with at least two rounds each, best two hits scoring — every required hit not on the target is a miss
 - **No-shoots and procedure errors (Sections 9.4 and 10.1–10.2):** minus 10 points each; per the no-shoot rule, at most two penalty hits count per individual no-shoot target (the app cannot enforce this)
-- **FTE (Rule 10.2.7):** failing to engage a scoring target with at least one round incurs one procedural penalty per target *plus* the applicable misses — which is why the FTE row comes on top of the Miss row: enter the target's misses as usual and add the FTE separately
+- **Failure to engage (Rule 10.2.7):** failing to engage a scoring target with at least one round incurs one procedural penalty per target *plus* the applicable misses. There is no separate FTE row — enter the target's misses as usual and add one Procedure error per unengaged target
 - **Zero floor:** negative point totals do not produce a negative hit factor; stage points floor at 0
 - **Round count (Rule 3.2.1):** the written stage briefing states the stage's minimum round count. Since every required hit is either a scoring hit or a recorded miss, hits + misses reconstruct that number automatically
 
