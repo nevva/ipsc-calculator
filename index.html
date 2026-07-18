@@ -264,6 +264,11 @@
     font-variant-numeric:tabular-nums;
     font-size:11px;opacity:.7;margin-top:3px;overflow-wrap:anywhere;
   }
+  .hist-time{
+    font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    font-variant-numeric:tabular-nums;
+    font-size:10px;opacity:.5;margin-top:3px;
+  }
   .hist-actions{display:flex;gap:6px;flex:0 0 auto}
   .hist-actions button{
     font:inherit;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
@@ -304,8 +309,8 @@
         <button id="langEn" type="button">EN</button>
       </div>
       <div class="pf-toggle" role="group" aria-label="Power factor">
-        <button id="pfMinor" type="button">Minor</button>
-        <button id="pfMajor" type="button" class="active">Major</button>
+        <button id="pfMinor" type="button" class="active">Minor</button>
+        <button id="pfMajor" type="button">Major</button>
       </div>
     </div>
   </header>
@@ -433,7 +438,7 @@
   // ---------- State ----------
   var state = {
     lang: "sv",
-    pf: "major",
+    pf: "minor",
     counts: { A:0, C:0, D:0, S:0, M:0, NS:0, P:0 },
     time: 0,
     history: [],       // list of saved stages, newest last
@@ -476,6 +481,7 @@
       if (e && typeof e.id === "number" && e.counts){
         out.push({
           id: e.id,
+          ts: typeof e.ts === "number" ? e.ts : null,
           pf: e.pf === "minor" ? "minor" : "major",
           time: (typeof e.time === "number" && e.time >= 0) ? e.time : 0,
           counts: copyCounts(e.counts),
@@ -751,8 +757,11 @@
 
   function saveStage(){
     var r = calc();
+    var editing = state.editingId !== null;
+    var existing = editing ? findEntry(state.editingId) : null;
     var entry = {
-      id: state.editingId !== null ? state.editingId : nextId(),
+      id: editing ? state.editingId : nextId(),
+      ts: (existing && existing.ts) ? existing.ts : Date.now(),  // preserve original save time on edit
       pf: state.pf,
       time: state.time,
       counts: copyCounts(state.counts),
@@ -760,20 +769,25 @@
       hf: r.hf,
       rounds: r.rounds
     };
-    if (state.editingId !== null){
-      var existing = findEntry(state.editingId);
-      if (existing){
-        for (var k in entry){ if (entry.hasOwnProperty(k)) existing[k] = entry[k]; }
-      } else {
-        state.history.push(entry);
-      }
-      state.editingId = null;
+    if (editing && existing){
+      for (var k in entry){ if (entry.hasOwnProperty(k)) existing[k] = entry[k]; }
     } else {
       state.history.push(entry);
     }
+    state.editingId = null;
     storeHistory();
     updateSaveButton();
     renderHistory();
+  }
+
+  // Locale-formatted save time; renders live in the active language.
+  function formatTs(ts){
+    if (!ts) return "";
+    try {
+      return new Date(ts).toLocaleString(state.lang === "sv" ? "sv-SE" : "en-GB", {
+        year:"numeric", month:"2-digit", day:"2-digit", hour:"2-digit", minute:"2-digit"
+      });
+    } catch(e){ return ""; }
   }
 
   function editStage(id){
@@ -827,11 +841,13 @@
       var sub = e.score + " / " + max + " " + t.unit +
                 " · " + e.time.toFixed(2) + " " + t.secUnit +
                 " · " + pfLab;
+      var tsTxt = formatTs(e.ts);
       html +=
         '<div class="hist-item">' +
           '<div class="hist-main">' +
             '<div class="hist-hf">HF ' + hfTxt + '</div>' +
             '<div class="hist-sub">' + sub + '</div>' +
+            (tsTxt ? '<div class="hist-time">' + tsTxt + '</div>' : '') +
           '</div>' +
           '<div class="hist-actions">' +
             '<button type="button" class="edit" data-hist-edit="' + e.id + '">' + t.edit + '</button>' +
