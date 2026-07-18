@@ -2,7 +2,7 @@
 
 Mobile-friendly calculator for IPSC stage scores and hit factor — runs entirely in the browser, offline, with no dependencies.
 
-**Live:** `https://nevva.github.io/ipsc-calculator/` *(update the link once Pages is enabled)*
+**Live:** `https://nevva.github.io/ipsc-calculator/`
 
 ### Features
 
@@ -38,14 +38,6 @@ Mobile-friendly calculator for IPSC stage scores and hit factor — runs entirel
 - **Failure to engage (Rule 10.2.7):** failing to engage a scoring target with at least one round incurs one procedural penalty per target *plus* the applicable misses. There is no separate FTE row — enter the target's misses as usual and add one Procedure error per unengaged target
 - **Zero floor:** negative point totals do not produce a negative hit factor; stage points floor at 0
 - **Round count (Rule 3.2.1):** the written stage briefing states the stage's minimum round count. Since every required hit is either a scoring hit or a recorded miss, hits + misses reconstruct that number automatically
-
-### Publish with GitHub Pages
-
-1. Create a new public repo on GitHub
-2. Upload `index.html`, `README.md` and `LICENSE`
-3. Go to **Settings → Pages**
-4. Under **Build and deployment**: choose **Deploy from a branch**, branch `main`, folder `/ (root)`, click **Save**
-5. After a minute or so the page is live at `https://<username>.github.io/<repo-name>/`
 
 ### Run locally
 
