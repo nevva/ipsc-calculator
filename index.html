@@ -194,6 +194,31 @@
     box-shadow:0 2px 6px rgba(0,0,0,.3);
   }
 
+  /* ---------- Calculation breakdown ---------- */
+  .calc-card{
+    background:linear-gradient(180deg,#1B1811,var(--timer-bg));
+    border:1px solid var(--timer-edge);
+    border-radius:10px;
+    padding:12px 14px;
+    font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    font-variant-numeric:tabular-nums;
+    color:var(--amber-dim);
+    font-size:13px;
+  }
+  .calc-card .cline{
+    display:flex;align-items:baseline;justify-content:space-between;gap:12px;
+  }
+  .calc-card .cline + .cline{
+    margin-top:8px;padding-top:8px;border-top:1px solid rgba(232,220,192,.14);
+  }
+  .calc-card .cexpr{opacity:.85;min-width:0;overflow-wrap:anywhere;line-height:1.5}
+  .calc-card .cres{color:var(--amber);font-weight:700;white-space:nowrap}
+  .calc-card .cnote{
+    margin-top:10px;font-size:11px;line-height:1.5;opacity:.6;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--amber-dim);
+  }
+
   /* ---------- Reset ---------- */
   .reset{
     margin-top:22px;width:100%;
@@ -260,6 +285,9 @@
     <input id="timeSlider" type="range" min="0" max="60" step="0.01" value="0" aria-label="Stagetid, reglage">
   </div>
 
+  <div class="section-label" data-i18n="secCalc">Uträkning</div>
+  <div class="calc-card" id="calc" aria-live="polite"></div>
+
   <button class="reset" id="reset" type="button" data-i18n="reset">Nollställ stage</button>
 
   <p class="footnote" data-i18n="footnote"></p>
@@ -285,6 +313,10 @@
       stageTime: "Stagetid",
       secUnit: "SEK",
       steelZone: "PLÅT",
+      secCalc: "Uträkning",
+      calcPoints: "Poäng",
+      calcNoTime: "ange tid",
+      calcFloor: "Råpoäng {raw} golvas till 0.",
       reset: "Nollställ stage",
       footnote: "Poäng: A = 5 · C = 4/3 · D = 2/1 (Major/Minor) · Plåt = 5 oavsett faktor. B\u2011zon på Classic\u2011mål räknas som C. Stående plåt registreras som miss. Miss, FTE (failure to engage), no\u2011shoot och procedurfel ger −10 p vardera. Vid FTE fyller du i målets missar som vanligt — FTE\u2011avdraget läggs ovanpå. Antal skott beräknas automatiskt som träffar + missar. Stagepoäng under 0 räknas som 0. Hit factor = poäng ÷ tid.",
       decrease: "Minska",
@@ -308,6 +340,10 @@
       stageTime: "Stage time",
       secUnit: "SEC",
       steelZone: "STEEL",
+      secCalc: "Calculation",
+      calcPoints: "Points",
+      calcNoTime: "enter time",
+      calcFloor: "Raw {raw} floored to 0.",
       reset: "Reset stage",
       footnote: "Scoring: A = 5 · C = 4/3 · D = 2/1 (Major/Minor) · Steel = 5 regardless of factor. The B zone on Classic targets counts as C. Standing steel is recorded as a miss. Miss, FTE (failure to engage), no\u2011shoot and procedure errors cost −10 pts each. For an FTE, enter the target's misses as usual — the FTE penalty comes on top. The round count is calculated automatically as hits + misses. Stage points below 0 count as 0. Hit factor = points ÷ time.",
       decrease: "Decrease",
@@ -385,6 +421,7 @@
     maxPts: document.getElementById("maxPts"),
     pct: document.getElementById("pct"),
     rounds: document.getElementById("rounds"),
+    calc: document.getElementById("calc"),
     timeNum: document.getElementById("timeNum"),
     timeSlider: document.getElementById("timeSlider"),
     pfMajor: document.getElementById("pfMajor"),
@@ -407,6 +444,44 @@
     return { score:score, raw:raw, rounds:rounds, hf:hf };
   }
 
+  // ---------- Calculation breakdown ----------
+  // Shows the current numbers plugged into the formula, e.g.
+  //   A 3×5 + C 2×4 − 1×10   = 13
+  //   HF = 13 ÷ 4.25         = 3.0588
+  function buildCalc(r){
+    var t = T();
+    var pts = ZONE_PTS[state.pf];
+    var c = state.counts;
+
+    var terms = [];
+    zoneDefs.forEach(function(d){
+      var n = c[d.key];
+      if (n > 0){
+        var lab = d.key === "S" ? t.steelZone : d.key;
+        terms.push(lab + " " + n + "×" + pts[d.key]);
+      }
+    });
+    var penN = c.M + c.F + c.NS + c.P;
+    var expr = terms.length ? terms.join(" + ") : "0";
+    if (penN > 0) expr += " − " + penN + "×" + PENALTY;
+
+    var lines =
+      '<div class="cline"><span class="cexpr">' + t.calcPoints + " = " + expr +
+        '</span><span class="cres">' + r.score + '</span></div>';
+
+    var hfExpr = "HF = " + r.score + " ÷ " +
+      (r.hf === null ? t.calcNoTime : state.time.toFixed(2));
+    var hfRes = r.hf === null ? "—" : r.hf.toFixed(4);
+    lines +=
+      '<div class="cline"><span class="cexpr">' + hfExpr +
+        '</span><span class="cres">' + hfRes + '</span></div>';
+
+    if (r.raw < 0){
+      lines += '<div class="cnote">' + t.calcFloor.replace("{raw}", r.raw) + '</div>';
+    }
+    return lines;
+  }
+
   // ---------- Render ----------
   function render(){
     var r = calc();
@@ -425,6 +500,7 @@
     el.score.textContent = r.score;
     el.hf.textContent = r.hf === null ? "—" : r.hf.toFixed(4);
     el.rounds.textContent = r.rounds;
+    el.calc.innerHTML = buildCalc(r);
 
     if (r.rounds > 0){
       var max = r.rounds * 5;
