@@ -4,6 +4,45 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>IPSC Stagekalkylator</title>
+
+<!-- SEO / sharing. Crawlers don't run JS, so these static defaults (Swedish primary,
+     English alternate) are what social previews read. Absolute URLs are required by
+     Facebook; update them if the site moves off GitHub Pages. -->
+<meta name="description" content="Mobil IPSC-stagekalkylator: knappa in träffar och stagetid och få poäng, hit factor och procent av max i realtid. Fungerar offline. · Mobile IPSC stage score calculator.">
+<meta name="author" content="Callide">
+<meta name="theme-color" content="#C7A97A">
+<meta name="color-scheme" content="light">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="IPSC">
+<link rel="canonical" href="https://nevva.github.io/ipsc-calculator/">
+
+<!-- Open Graph (Facebook, LinkedIn, Messenger, WhatsApp, …) -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="IPSC Stagekalkylator">
+<meta property="og:title" content="IPSC Stagekalkylator · Stage Calculator">
+<meta property="og:description" content="Knappa in träffar och stagetid och få poäng, hit factor och % av max i realtid. Fungerar offline. · Mobile IPSC stage score calculator.">
+<meta property="og:url" content="https://nevva.github.io/ipsc-calculator/">
+<meta property="og:image" content="https://nevva.github.io/ipsc-calculator/og-image.png">
+<meta property="og:image:secure_url" content="https://nevva.github.io/ipsc-calculator/og-image.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="IPSC-stagekalkylator: en hit factor-display med poäng, procent av max och antal skott.">
+<meta property="og:locale" content="sv_SE">
+<meta property="og:locale:alternate" content="en_US">
+
+<!-- Twitter / X -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="IPSC Stagekalkylator · Stage Calculator">
+<meta name="twitter:description" content="Knappa in träffar och stagetid och få poäng, hit factor och % av max i realtid. Fungerar offline.">
+<meta name="twitter:image" content="https://nevva.github.io/ipsc-calculator/og-image.png">
+<meta name="twitter:image:alt" content="IPSC-stagekalkylator: en hit factor-display med poäng, procent av max och antal skott.">
+
+<!-- Icons. Favicon is inlined so it still works from file:// and offline. -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='14'%20fill='%2315130E'/%3E%3Ctext%20x='32'%20y='47'%20font-family='Helvetica,Arial,sans-serif'%20font-size='42'%20font-weight='800'%20fill='%23FFB300'%20text-anchor='middle'%3EA%3C/text%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <style>
   :root{
     --cardboard:#C7A97A;

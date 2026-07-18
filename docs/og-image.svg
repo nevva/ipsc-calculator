@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1200" viewBox="0 0 1200 1200">
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="18%" r="70%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.20"/>
+      <stop offset="60%" stop-color="#C7A97A" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="panel" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1B1811"/>
+      <stop offset="100%" stop-color="#15130E"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Cardboard background (full square; middle 630px band is the OG crop) -->
+  <rect width="1200" height="1200" fill="#C7A97A"/>
+  <rect width="1200" height="1200" fill="url(#glow)"/>
+
+  <!-- Design centred in the 285..915 vertical band -->
+  <g transform="translate(0,285)">
+    <!-- Title -->
+    <text x="82" y="132" font-family="Helvetica,Arial,sans-serif" font-size="76" font-weight="800" letter-spacing="10" fill="#26231B">IPSC</text>
+    <text x="86" y="182" font-family="Helvetica,Arial,sans-serif" font-size="29" font-weight="700" letter-spacing="5" fill="#26231B" opacity="0.6">STAGEKALKYLATOR &#183; STAGE CALCULATOR</text>
+
+    <!-- Timer readout panel -->
+    <rect x="80" y="232" width="1040" height="306" rx="24" fill="url(#panel)" stroke="#2A261C" stroke-width="2"/>
+    <text x="122" y="300" font-family="Helvetica,Arial,sans-serif" font-size="24" font-weight="800" letter-spacing="12" fill="#E8DCC0" opacity="0.72">HIT FACTOR</text>
+    <text x="118" y="452" font-family="Menlo,Consolas,monospace" font-size="132" font-weight="700" fill="#FFB300">5.0000</text>
+
+    <!-- Divider -->
+    <line x1="122" y1="482" x2="1078" y2="482" stroke="#E8DCC0" stroke-opacity="0.16" stroke-width="2"/>
+
+    <!-- Stat row -->
+    <text x="122" y="522" font-family="Menlo,Consolas,monospace" font-size="26" fill="#E8DCC0"><tspan font-weight="700">130</tspan><tspan opacity="0.6" dx="10">POÄNG</tspan></text>
+    <text x="470" y="522" font-family="Menlo,Consolas,monospace" font-size="26" fill="#E8DCC0"><tspan font-weight="700">92%</tspan><tspan opacity="0.6" dx="10">AV MAX</tspan></text>
+    <text x="800" y="522" font-family="Menlo,Consolas,monospace" font-size="26" fill="#E8DCC0"><tspan font-weight="700">26</tspan><tspan opacity="0.6" dx="10">SKOTT</tspan></text>
+
+    <!-- Tagline -->
+    <text x="82" y="600" font-family="Helvetica,Arial,sans-serif" font-size="24" font-weight="600" fill="#26231B" opacity="0.55">Räkna poäng och hit factor &#183; offline &#183; count your stage score</text>
+  </g>
+</svg>
